@@ -1,6 +1,6 @@
 # Schema Drift Detective — developer entry points.
 # All targets are .PHONY: there is no file-target makefile here on purpose.
-.PHONY: help install up down demo bench fmt lint typecheck test test-fast cov clean reset
+.PHONY: help install up down demo demo-live bench fmt lint typecheck test test-fast cov clean reset
 .DEFAULT_GOAL := help
 
 # Use bash for richer shell features; -e fails on the first error.
@@ -36,6 +36,19 @@ reset: ## Stop services and WIPE volumes (destructive).
 demo: install up ## End-to-end demo: inject a drift, open a PR (dry-run by default).
 	$(PY) -m schema_drift.cli demo --dry-run
 
+demo-live: install up ## Open a REAL PR against drift-demo-sandbox. Requires DRIFT_LIVE_PR=1 + DRIFT_GITHUB_TOKEN.
+	@if [ "$$DRIFT_LIVE_PR" != "1" ]; then \
+	  echo "ERROR: refusing to run live demo without DRIFT_LIVE_PR=1." >&2; \
+	  echo "Usage: DRIFT_LIVE_PR=1 DRIFT_GITHUB_TOKEN=ghp_xxx make demo-live" >&2; \
+	  exit 2; \
+	fi
+	@if [ -z "$$DRIFT_GITHUB_TOKEN" ]; then \
+	  echo "ERROR: DRIFT_GITHUB_TOKEN is empty." >&2; \
+	  exit 2; \
+	fi
+	DRIFT_GITHUB_REPO=$${DRIFT_GITHUB_REPO:-AntarangSharma/drift-demo-sandbox} \
+	  $(PY) -m schema_drift.cli demo --no-dry-run
+
 bench: install ## Run the full benchmark on the held-out split.
 	$(PY) -m bench.runner --all --split holdout
 
@@ -50,11 +63,11 @@ lint: ## Lint with ruff (no autofix).
 typecheck: ## Static type check with pyright.
 	$(VENV)/bin/pyright src tests bench
 
-test-fast: ## Run fast unit tests only (skip slow + integration).
-	$(VENV)/bin/pytest -m "not slow and not integration" -q
+test-fast: ## Run fast unit tests only (skip slow + integration + live).
+	$(VENV)/bin/pytest -m "not slow and not integration and not live" -q
 
-test: ## Run all tests (includes integration when docker is up).
-	$(VENV)/bin/pytest
+test: ## Run all tests (includes integration when docker is up). Skips `live` (real GH PRs).
+	$(VENV)/bin/pytest -m "not live"
 
 cov: ## Run tests and open coverage report in browser.
 	$(VENV)/bin/pytest --cov-report=html

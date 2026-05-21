@@ -125,6 +125,7 @@ markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: requires docker-compose services",
     "llm: requires LLM API keys",
+    "live: opens REAL PRs against drift-demo-sandbox (DRIFT_LIVE_PR=1 + token required)",
 ]
 
 [tool.coverage.run]

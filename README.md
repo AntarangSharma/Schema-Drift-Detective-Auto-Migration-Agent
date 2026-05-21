@@ -41,6 +41,24 @@ cp .env.example .env  # add ANTHROPIC_API_KEY + GITHUB_TOKEN
 make demo             # injects a drift; opens (or simulates) a PR
 ```
 
+### See the agent open real PRs
+
+The agent opens its PRs against a dedicated sandbox repo:
+
+**👉 [github.com/AntarangSharma/drift-demo-sandbox/pulls](https://github.com/AntarangSharma/drift-demo-sandbox/pulls)**
+
+To reproduce locally:
+
+```bash
+DRIFT_LIVE_PR=1 \
+DRIFT_GITHUB_TOKEN=ghp_xxx \   # fine-grained PAT, contents:write + pull-requests:write
+make demo-live
+```
+
+`make demo` defaults to **dry-run** (just prints what *would* be opened). The
+live path is gated by `DRIFT_LIVE_PR=1` so CI and accidental local runs can
+never open a real PR — both flags must be set explicitly.
+
 Other useful targets:
 
 ```bash

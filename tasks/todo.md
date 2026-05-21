@@ -68,39 +68,49 @@ on a branch named `drift/<ulid>`.
     drift watch --once → ⚠ 1 drift event(s) detected
                           • column_added_nullable → source_raw.orders.discount_code
 
-## Day 5 — Live PR opening
+## Day 5 — Live PR opening ✅ CODE DONE 2026-05-21 (live acceptance pending user PAT)
 
-- [ ] **Create `drift-demo-sandbox` repo** via GH MCP (public, MIT, autoInit).
-  - [ ] Push `dbt_project/` from current repo into the sandbox so the
-        agent's patch has a real `sources.yml` to modify.
-  - [ ] Add a sandbox README explaining "this repo's PRs are all opened by
-        the schema-drift agent — don't expect human commits here".
-- [ ] **Live `pr.py`** — replace the `NotImplementedError` with PyGithub 2.x
-      logic:
-  - [ ] Resolve `base_sha = repo.get_branch(base).commit.sha`.
-  - [ ] Create branch `bundle.branch_name` from `base_sha`.
-  - [ ] For each `FilePatch`: `repo.create_file` / `update_file` / `delete_file`
-        on the new branch.
-  - [ ] `repo.create_pull(title, body, head, base, draft=bundle.is_draft)`.
-  - [ ] `pr.add_to_labels(*bundle.labels)`.
-  - [ ] Return `PRResult(dry_run=False, url=pr.html_url, branch=..., labels=...)`.
-- [ ] **Safety**: `open_pr(..., dry_run=False)` short-circuits to a clear
-      `RuntimeError("DRIFT_LIVE_PR not set")` if the env var is missing.
-- [ ] **Idempotency**: if `bundle.branch_name` already exists, log and skip
-      (do NOT silently force-push). This matters more than it sounds — the
-      agent should never overwrite a reviewer's manual edits.
-- [ ] **`make demo-live`** target — `docker compose up -d` + seed + `ALTER` +
-      `drift watch --once` + opens real PR. Print the resulting URL.
-- [ ] **Tests**
-  - Unit tests using a `FakeGitHubRepo` (no real network) covering: happy
-    path, branch-exists-skip, missing env var.
-  - One opt-in integration test gated by `pytest -m live` that hits the real
-    sandbox repo. Default `pytest` skips it.
-- [ ] Quality gate green.
+- [x] **Create `drift-demo-sandbox` repo** (public, MIT, autoInit) —
+      https://github.com/AntarangSharma/drift-demo-sandbox.
+  - [x] Pushed `dbt_project/` into the sandbox (sources.yml + staging +
+        marts + profiles).
+  - [x] Sandbox README explains "PRs here are all opened by the agent".
+- [x] **Live `pr.py`** — full PyGithub 2.x implementation:
+  - [x] Resolves `base_sha` via `repo.get_branch(repo.default_branch).commit.sha`
+        (never hardcodes `main` — old GH accounts still default to `master`).
+  - [x] Creates branch via `repo.create_git_ref("refs/heads/<branch>", sha)`.
+  - [x] Routes each `FilePatch` through `create_file` / `update_file` /
+        `delete_file` per its `mode`.
+  - [x] `repo.create_pull(title, body, head, base, draft=bundle.is_draft)`.
+  - [x] `pr.add_to_labels(*bundle.labels)` (only if labels non-empty).
+  - [x] Returns `PRResult(dry_run=False, url=pr.html_url, branch=..., labels=...)`.
+- [x] **Safety**: live path raises `RuntimeError` if `DRIFT_LIVE_PR != 1`,
+      `repo` is None, or token is None. Verified by unit tests.
+- [x] **Idempotency**: branch-exists is detected via PyGithub's
+      `UnknownObjectException` and surfaces as
+      `PRResult(skipped_reason="branch_exists", url=None)`. No force-push.
+- [x] **`make demo-live`** — gates on `$DRIFT_LIVE_PR=1` + non-empty
+      `$DRIFT_GITHUB_TOKEN`, exits 2 otherwise. Sets
+      `DRIFT_GITHUB_REPO=AntarangSharma/drift-demo-sandbox` by default.
+- [x] **Tests** (10 new cases):
+  - `tests/test_pr.py` — `FakeGitHubRepo` (satisfies the `GitHubRepoLike`
+    Protocol) covering: missing env var, missing token, missing repo,
+    happy update, create mode, delete mode, default-branch resolution
+    (`master`), explicit base-branch override, no-labels short-circuit,
+    branch-exists idempotency. Plus dry-run backfill/rollback rendering.
+  - `tests/test_pr_live.py` — opt-in test gated by
+    `@pytest.mark.live` *and* env-var skipif. Default `pytest -m "not live"`
+    skips it; CI is unaffected.
+- [x] Quality gate: ruff ✓ format ✓ pyright ✓ pytest ✓ (96 passed, 1
+      skipped (live), 92% cov).
 
-**Day 5 acceptance**: a real PR appears at
-`https://github.com/AntarangSharma/drift-demo-sandbox/pulls` after running
-`DRIFT_LIVE_PR=1 DRIFT_GITHUB_TOKEN=... make demo-live`.
+**Day 5 acceptance** (run locally to verify):
+
+    DRIFT_LIVE_PR=1 \
+    DRIFT_GITHUB_TOKEN=ghp_xxx \
+    make demo-live
+
+…opens a real PR at https://github.com/AntarangSharma/drift-demo-sandbox/pulls.
 
 ## Parallel small items (15 min each, do whenever)
 

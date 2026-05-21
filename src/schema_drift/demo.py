@@ -155,6 +155,16 @@ def run_demo(*, dry_run: bool = True, console: Console | None = None) -> int:
     gateway = GitHubPRGateway(
         repo=os.getenv("DRIFT_GITHUB_REPO"),
         console=c,
+        # Token is only consulted on the live path; safe to leave None for
+        # dry-runs.
+        token=os.getenv("DRIFT_GITHUB_TOKEN"),
     )
-    gateway.open_pr(bundle, dry_run=dry_run)
+    result = gateway.open_pr(bundle, dry_run=dry_run)
+    if not dry_run and result.url:
+        c.print(f"[bold green]✓ opened PR[/bold green] [link={result.url}]{result.url}[/link]")
+    elif not dry_run and result.skipped_reason == "branch_exists":
+        c.print(
+            f"[yellow]↷ skipped[/yellow] branch [bold]{result.branch}[/bold] "
+            "already exists — leaving the reviewer's edits alone."
+        )
     return 0
