@@ -70,7 +70,7 @@ class PostgresWatcher(SourceWatcher):
     Parameters
     ----------
     dsn
-        libpq connection string, e.g. ``"postgresql://drift:drift@localhost:5432/drift"``.
+        libpq connection string, e.g. ``"postgresql://drift:drift@localhost:55432/drift"``.
     schemas
         Schema names to monitor. Defaults to ``("source_raw",)``.
     source_identifier

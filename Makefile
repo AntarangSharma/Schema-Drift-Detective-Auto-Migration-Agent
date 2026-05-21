@@ -25,7 +25,7 @@ up: ## Start local Postgres (and other services) via docker compose.
 	docker compose up -d
 	@echo "Waiting for Postgres to be ready..."
 	@until docker compose exec -T postgres pg_isready -U drift -d drift >/dev/null 2>&1; do sleep 1; done
-	@echo "Postgres is up. psql: postgresql://drift:drift@localhost:5432/drift"
+	@echo "Postgres is up. psql: postgresql://drift:drift@localhost:55432/drift"
 
 down: ## Stop services (keeps volumes).
 	docker compose down
