@@ -112,15 +112,19 @@ on a branch named `drift/<ulid>`.
 
 …opens a real PR at https://github.com/AntarangSharma/drift-demo-sandbox/pulls.
 
-## Parallel small items (15 min each, do whenever)
+## Parallel small items ✅ ALL DONE 2026-05-21
 
-- [ ] README: add the `DRIFT_LIVE_PR` callout + sandbox repo link.
-- [ ] `CHANGELOG.md` with Day-3 and Day-4/5 entries.
-- [ ] Bump coverage on `pr.py` (77% → 90%) and `migrator.py` (92% → 95%) —
-      cover the rollback/backfill rendering branches.
-- [ ] Add a `docs/03_live_pr_path.md` short post-mortem of the day-5 work
-      (interview talking point: "what's the failure mode if PyGithub throws
-      mid-PR creation?").
+- [x] README: `DRIFT_LIVE_PR` callout + sandbox repo link (shipped with Day 5).
+- [x] `CHANGELOG.md` covering Phase 0 / Day 3 / Day 4 / Day 5.
+- [x] Coverage bump:
+      - `pr.py` 77% → 90% (statement coverage 100%; remainder is Protocol
+        `@property` branch arrows, not real gaps).
+      - `migrator.py` 92% → 99% (target was 95% — exceeded; added tests
+        for malformed `source_identifier`, missing `column_after`, and
+        multi-source-block `_locate_table` walk).
+- [x] `docs/03_live_pr_path.md` post-mortem — 9-step flow, two-layer safety
+      gate, table of PyGithub partial-state failure modes, recipe to
+      re-validate after a PyGithub upgrade.
 
 ## Risks / things that bite
 
