@@ -7,6 +7,7 @@ part recruiters and CI exercise hundreds of times more than the live path.
 
 from __future__ import annotations
 
+import typer
 from typer.testing import CliRunner
 
 from schema_drift.cli import app
@@ -20,13 +21,21 @@ def test_watch_without_once_flag_exits_with_guidance():
     assert "Week 6" in result.stdout or "Week 6" in (result.stderr or "")
 
 
-def test_watch_help_lists_all_options():
-    # Force a wide terminal so Rich/typer doesn't line-wrap option flags and
-    # split them across lines (which makes naive `"--foo" in stdout` flaky on
-    # CI's narrow default).
-    result = CliRunner(env={"COLUMNS": "200"}).invoke(app, ["watch", "--help"])
-    assert result.exit_code == 0
-    # Match on the bare flag identifier, not the leading dashes — survives
-    # whatever wrapping any terminal width imposes.
-    for opt in ("once", "dsn", "schemas", "source-identifier"):
-        assert opt in result.stdout, f"--{opt} missing from `drift watch --help`"
+def test_watch_command_declares_expected_options():
+    """Introspect the click command instead of scraping help output.
+
+    Help rendering goes through Rich, which line-wraps based on terminal
+    width and ANSI styling. Asserting on substrings of rendered help is
+    fragile across local vs. CI. The click ``Command`` object is the
+    source of truth — assert on it directly.
+    """
+    click_cmd = typer.main.get_command(app)
+    # Resolve the `watch` subcommand. ``get_command`` returns a Group when
+    # the typer app has multiple commands.
+    assert click_cmd is not None
+    watch = click_cmd.commands["watch"]  # type: ignore[attr-defined]
+
+    declared = {opt for p in watch.params for opt in getattr(p, "opts", ())}
+    expected = {"--once", "--dsn", "--schemas", "--source-identifier"}
+    missing = expected - declared
+    assert not missing, f"`drift watch` is missing options {missing}"
