@@ -24,4 +24,6 @@ def test_help_listed_commands():
 def test_demo_dry_run_default():
     result = CliRunner().invoke(app, ["demo"])
     assert result.exit_code == 0
-    assert "dry_run = True" in result.stdout
+    # End-to-end demo prints the dry-run banner and the new column name.
+    assert "DRY-RUN" in result.stdout
+    assert "discount_code" in result.stdout

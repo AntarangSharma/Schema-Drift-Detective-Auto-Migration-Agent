@@ -1,0 +1,31 @@
+version: 2
+
+sources:
+  - name: source_raw
+    description: "Raw operational tables — the system we monitor for upstream drift."
+    schema: source_raw
+    tables:
+      - name: orders
+        description: "Order header records."
+        columns:
+          - name: order_id
+            description: "Primary key."
+            data_tests: [unique, not_null]
+          - name: customer_id
+            data_tests: [not_null]
+          - name: amount
+            description: "Order total in USD."
+          - name: status
+            description: "Order status."
+          - name: created_at
+            description: "Order creation timestamp."
+
+      - name: customers
+        description: "Customer master records."
+        columns:
+          - name: customer_id
+            data_tests: [unique, not_null]
+          - name: email
+            data_tests: [not_null]
+          - name: name
+          - name: created_at

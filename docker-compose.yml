@@ -20,6 +20,7 @@ services:
     volumes:
       - drift_pg_data:/var/lib/postgresql/data
       - ./infra/postgres-init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./infra/seed_demo_data.sql:/docker-entrypoint-initdb.d/02-seed-demo.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U drift -d drift"]
       interval: 5s

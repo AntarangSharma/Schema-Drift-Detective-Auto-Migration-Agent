@@ -1,0 +1,64 @@
+{
+  "metadata": {"project_name": "drift_demo", "adapter_type": "postgres"},
+  "sources": {
+    "source.drift_demo.source_raw.orders": {
+      "resource_type": "source",
+      "name": "orders",
+      "identifier": "orders",
+      "source_name": "source_raw",
+      "schema": "source_raw",
+      "database": "drift",
+      "depends_on": {"nodes": []}
+    },
+    "source.drift_demo.source_raw.customers": {
+      "resource_type": "source",
+      "name": "customers",
+      "identifier": "customers",
+      "source_name": "source_raw",
+      "schema": "source_raw",
+      "database": "drift",
+      "depends_on": {"nodes": []}
+    }
+  },
+  "nodes": {
+    "model.drift_demo.stg_orders": {
+      "resource_type": "model",
+      "name": "stg_orders",
+      "schema": "analytics",
+      "database": "drift",
+      "depends_on": {"nodes": ["source.drift_demo.source_raw.orders"]}
+    },
+    "model.drift_demo.stg_customers": {
+      "resource_type": "model",
+      "name": "stg_customers",
+      "schema": "analytics",
+      "database": "drift",
+      "depends_on": {"nodes": ["source.drift_demo.source_raw.customers"]}
+    },
+    "model.drift_demo.fct_orders": {
+      "resource_type": "model",
+      "name": "fct_orders",
+      "schema": "analytics",
+      "database": "drift",
+      "depends_on": {"nodes": [
+        "model.drift_demo.stg_orders",
+        "model.drift_demo.stg_customers"
+      ]}
+    },
+    "model.drift_demo.mart_revenue_daily": {
+      "resource_type": "model",
+      "name": "mart_revenue_daily",
+      "schema": "analytics",
+      "database": "drift",
+      "depends_on": {"nodes": ["model.drift_demo.fct_orders"]}
+    }
+  },
+  "exposures": {
+    "exposure.drift_demo.exec_revenue": {
+      "resource_type": "exposure",
+      "name": "exec_revenue",
+      "type": "dashboard",
+      "depends_on": {"nodes": ["model.drift_demo.mart_revenue_daily"]}
+    }
+  }
+}

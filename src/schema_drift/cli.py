@@ -13,6 +13,7 @@ import typer
 from rich.console import Console
 
 from schema_drift import __version__
+from schema_drift.demo import run_demo
 
 app = typer.Typer(
     name="drift",
@@ -40,13 +41,9 @@ def demo(
         ),
     ] = True,
 ) -> None:
-    """Run the end-to-end demo: inject a drift and open (or simulate) a PR.
-
-    Day-3 milestone target. Currently a stub; will be wired up in Week 1.
-    """
-    console.print("[yellow]demo command is a stub — wiring up in Week 1[/yellow]")
-    console.print(f"dry_run = {dry_run}")
-    raise typer.Exit(code=0)
+    """Run the end-to-end demo: inject a drift and open (or simulate) a PR."""
+    code = run_demo(dry_run=dry_run, console=console)
+    raise typer.Exit(code=code)
 
 
 @app.command()

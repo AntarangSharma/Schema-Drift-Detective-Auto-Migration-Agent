@@ -1,0 +1,17 @@
+name: "drift_demo"
+version: "1.0.0"
+profile: "drift_demo"
+config-version: 2
+
+model-paths: ["models"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  drift_demo:
+    staging:
+      +materialized: view
+      +schema: analytics
+    marts:
+      +materialized: table
+      +schema: analytics
