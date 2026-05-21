@@ -21,7 +21,12 @@ def test_watch_without_once_flag_exits_with_guidance():
 
 
 def test_watch_help_lists_all_options():
-    result = CliRunner().invoke(app, ["watch", "--help"])
+    # Force a wide terminal so Rich/typer doesn't line-wrap option flags and
+    # split them across lines (which makes naive `"--foo" in stdout` flaky on
+    # CI's narrow default).
+    result = CliRunner(env={"COLUMNS": "200"}).invoke(app, ["watch", "--help"])
     assert result.exit_code == 0
-    for opt in ("--once", "--dsn", "--schemas", "--source-identifier"):
-        assert opt in result.stdout
+    # Match on the bare flag identifier, not the leading dashes — survives
+    # whatever wrapping any terminal width imposes.
+    for opt in ("once", "dsn", "schemas", "source-identifier"):
+        assert opt in result.stdout, f"--{opt} missing from `drift watch --help`"
