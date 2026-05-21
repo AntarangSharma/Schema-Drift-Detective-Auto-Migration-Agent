@@ -1,0 +1,139 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "schema-drift-detective"
+version = "0.1.0"
+description = "An upstream schema-drift CI check that opens PRs with proposed migrations and impact analysis."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.12"
+authors = [{ name = "Antarang Sharma" }]
+keywords = ["dbt", "schema-drift", "data-engineering", "lineage", "ci"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Quality Assurance",
+]
+
+dependencies = [
+    "pydantic>=2.7,<3",
+    "psycopg[binary]>=3.2,<4",
+    "sqlglot>=25.0,<26",
+    "networkx>=3.3,<4",
+    "PyGithub>=2.3,<3",
+    "httpx>=0.27,<0.28",
+    "Jinja2>=3.1,<4",
+    "typer>=0.15,<1",
+    "rich>=13.7,<14",
+    "python-ulid>=2.7,<3",
+    "PyYAML>=6.0,<7",
+    "prometheus-client>=0.20,<0.21",
+]
+
+[project.optional-dependencies]
+llm = [
+    "anthropic>=0.34,<1",
+    "openai>=1.40,<2",
+    "instructor>=1.3,<2",
+]
+slack = ["slack-sdk>=3.27,<4"]
+lineage = ["openlineage-python>=1.18,<2"]
+dbt = ["dbt-core>=1.8,<2", "dbt-postgres>=1.8,<2", "dbt-duckdb>=1.8,<2"]
+dev = [
+    "pytest>=8.2,<9",
+    "pytest-cov>=5.0,<6",
+    "pytest-asyncio>=0.23,<1",
+    "hypothesis>=6.108,<7",
+    "ruff>=0.5,<1",
+    "pyright>=1.1.370,<2",
+    "pre-commit>=3.7,<4",
+    "freezegun>=1.5,<2",
+]
+
+[project.scripts]
+drift = "schema_drift.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/antarang/schema-drift-detective"
+Issues = "https://github.com/antarang/schema-drift-detective/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/schema_drift"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests", "bench"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "UP",   # pyupgrade
+    "SIM",  # flake8-simplify
+    "RUF",  # ruff-specific
+    "N",    # pep8-naming
+    "PT",   # flake8-pytest-style
+    "PL",   # pylint
+    "TID",  # tidy imports
+    "C4",   # comprehensions
+]
+ignore = [
+    "PLR0913",  # too many args
+    "PLR2004",  # magic value
+    "E501",     # line length handled by formatter
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["PLR0915", "PLR0913", "S101"]
+"bench/**" = ["PLR0915"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pyright]
+include = ["src", "tests", "bench"]
+pythonVersion = "3.12"
+typeCheckingMode = "standard"
+reportMissingImports = "error"
+reportMissingTypeStubs = "warning"
+venvPath = "."
+venv = ".venv"
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--cov=schema_drift",
+    "--cov-report=term-missing",
+    "--cov-report=xml",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: requires docker-compose services",
+    "llm: requires LLM API keys",
+]
+
+[tool.coverage.run]
+source = ["src/schema_drift"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+]

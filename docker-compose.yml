@@ -1,0 +1,47 @@
+# Schema Drift Detective — local development services.
+# Usage:
+#   docker compose up -d   (start)
+#   docker compose down -v (stop + wipe volumes)
+#
+# Single Postgres serves both the "source" (schema: source_raw) and the
+# "warehouse" (schema: analytics). See docs/02_revised_plan.md for rationale.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: drift-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: drift
+      POSTGRES_PASSWORD: drift
+      POSTGRES_DB: drift
+    ports:
+      - "5432:5432"
+    volumes:
+      - drift_pg_data:/var/lib/postgresql/data
+      - ./infra/postgres-init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U drift -d drift"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Marquez (OpenLineage UI) — enabled in week 6.
+  # Uncomment when needed; commented out for fast `make up` during early weeks.
+  # marquez:
+  #   image: marquezproject/marquez:0.50.0
+  #   container_name: drift-marquez
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   environment:
+  #     MARQUEZ_DB_HOST: postgres
+  #     MARQUEZ_DB_USER: drift
+  #     MARQUEZ_DB_PASSWORD: drift
+  #   ports:
+  #     - "5000:5000"  # API
+  #     - "3000:3000"  # Web UI
+
+volumes:
+  drift_pg_data:
+    name: drift_pg_data
