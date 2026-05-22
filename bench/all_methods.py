@@ -12,9 +12,9 @@ import argparse
 from pathlib import Path
 
 from bench.confusion import render as render_confusion
-from bench.runner import _print_summary, run
+from bench.runner import _print_summary, run, Method
 
-METHODS: tuple[str, ...] = ("ge", "dbt", "oneshot", "ours")
+METHODS: tuple[Method, ...] = ("ge", "dbt", "oneshot", "ours")
 
 
 def _build_argparser() -> argparse.ArgumentParser:
