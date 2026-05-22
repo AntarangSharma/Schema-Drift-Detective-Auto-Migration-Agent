@@ -65,7 +65,11 @@ class DuckDBWatcher(SourceWatcher):
                 "to use DuckDBWatcher, or pass a pre-built connection."
             )
         self._config = config or DuckDBWatcherConfig()
-        self._conn = connection or _duckdb.connect(self._config.database)
+        if connection is None:
+            assert _duckdb is not None
+            self._conn = _duckdb.connect(self._config.database)
+        else:
+            self._conn = connection
 
     # ------------------------------------------------------------------ #
     # SourceWatcher impl                                                  #

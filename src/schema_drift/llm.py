@@ -331,7 +331,6 @@ class DbtRunner(Protocol):
         ...
 
 
-
 @dataclass(slots=True)
 class StubDbtRunner:
     """Default test DbtRunner — always succeeds. Real impl arrives Week 5."""

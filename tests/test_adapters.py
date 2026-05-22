@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import httpx
 import pytest
 
@@ -108,7 +110,10 @@ class TestSnowflake:
     rowsets and assert the resulting ``SchemaSnapshot``.
     """
 
+    _last_kwargs: dict[str, Any]
+
     def _config(self) -> SnowflakeWatcherConfig:
+
         return SnowflakeWatcherConfig(
             account="acme",
             database="ANALYTICS",
