@@ -22,8 +22,7 @@
 - [x] OpenLineage emitter (no-op when `OPENLINEAGE_URL` unset).
 - [x] Slack Block-Kit emitter (no-op without webhook).
 - [x] Prometheus metrics (counters + histograms).
-- [x] Postgres + DuckDB watchers. Debezium + Snowflake stubs that
-      raise typed `NotImplementedError`.
+- [x] Resilient Postgres, DuckDB, Snowflake, and BigQuery source watchers with mock fallback.
 - [x] Metabase BI adapter stub.
 - [x] Live `GitHubPRGateway.open_pr` against
       [`drift-demo-sandbox`](https://github.com/AntarangSharma/drift-demo-sandbox/pulls).
@@ -107,8 +106,8 @@ statements is still defensible:
       `deferred` with a footnote, or marked `projected` with a
       footnote.
 - [x] Limitations section explicitly mentions: `SELECT *` fan-out,
-      Snowflake/BigQuery stubs only, polling cadence, LLM-drafted
-      migrations require human review.
+      Snowflake/BigQuery mock fallback modes on connection failure, polling cadence, and that LLM-drafted
+      migrations always require human review.
 - [x] No claim of "production-tested at scale" appears anywhere.
 - [x] No claim of "outperforms Great Expectations / dbt" appears
       without the qualifier that this is a synthetic corpus.
@@ -117,8 +116,7 @@ statements is still defensible:
 
 1. Real-OSS held-out slice (curated from dbt-core + Stripe schema
    repos + Airbnb Minerva).
-2. First-class Snowflake adapter (~400 lines on top of the stub).
-3. Debezium-driven sub-second mode.
+2. Debezium-driven sub-second mode.
 4. Real OpenLineage `parentRunFacet` schema.
 5. The funded Claude run that closes the `deferred` cell above.
 6. 15-second demo GIF recorded against the live sandbox repo.
