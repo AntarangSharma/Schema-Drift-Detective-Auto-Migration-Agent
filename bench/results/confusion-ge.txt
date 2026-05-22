@@ -1,0 +1,16 @@
+expected ↓ / pred →    | unknown | <none> |     Σ
+-----------------------+---------+--------+------
+column_added_not_null… |       0 |     13 |    13
+column_added_nullable  |       0 |     12 |    12
+type_narrowed          |      11 |      0 |    11
+pk_changed             |      11 |      0 |    11
+column_added_not_null  |       0 |     10 |    10
+type_incompatible      |       9 |      0 |     9
+type_widened           |       9 |      0 |     9
+column_dropped         |       8 |      0 |     8
+default_changed        |       8 |      0 |     8
+nullability_tightened  |       6 |      0 |     6
+column_renamed         |       5 |      0 |     5
+precision_changed      |       5 |      0 |     5
+enum_value_added       |       3 |      0 |     3
+Σ                      |      75 |     35 |   110

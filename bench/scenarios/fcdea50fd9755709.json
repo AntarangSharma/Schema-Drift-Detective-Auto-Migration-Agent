@@ -1,0 +1,90 @@
+{
+  "expected_change_type": "column_added_nullable",
+  "expected_severity": "low",
+  "notes": [],
+  "pre_columns": [
+    {
+      "character_max_length": null,
+      "data_type": "integer",
+      "default": null,
+      "enum_values": null,
+      "is_primary_key": true,
+      "name": "l_orderkey",
+      "nullable": false,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "ordinal_position": 1
+    },
+    {
+      "character_max_length": null,
+      "data_type": "integer",
+      "default": null,
+      "enum_values": null,
+      "is_primary_key": true,
+      "name": "l_linenumber",
+      "nullable": false,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "ordinal_position": 2
+    },
+    {
+      "character_max_length": null,
+      "data_type": "numeric",
+      "default": null,
+      "enum_values": null,
+      "is_primary_key": false,
+      "name": "l_quantity",
+      "nullable": false,
+      "numeric_precision": 12,
+      "numeric_scale": 2,
+      "ordinal_position": 3
+    },
+    {
+      "character_max_length": null,
+      "data_type": "numeric",
+      "default": null,
+      "enum_values": null,
+      "is_primary_key": false,
+      "name": "l_extendedprice",
+      "nullable": false,
+      "numeric_precision": 12,
+      "numeric_scale": 2,
+      "ordinal_position": 4
+    },
+    {
+      "character_max_length": null,
+      "data_type": "date",
+      "default": null,
+      "enum_values": null,
+      "is_primary_key": false,
+      "name": "l_shipdate",
+      "nullable": false,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "ordinal_position": 5
+    }
+  ],
+  "raw_changes": [
+    {
+      "column_after": {
+        "character_max_length": null,
+        "data_type": "varchar(40)",
+        "default": null,
+        "enum_values": null,
+        "is_primary_key": false,
+        "name": "new_col_v0",
+        "nullable": true,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "ordinal_position": 6
+      },
+      "column_before": null,
+      "kind": "added",
+      "table_identifier": "tpch.lineitem"
+    }
+  ],
+  "scenario_id": "fcdea50fd9755709",
+  "seed": 20260101,
+  "table": "tpch.lineitem",
+  "variant": 0
+}

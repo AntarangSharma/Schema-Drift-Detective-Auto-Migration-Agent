@@ -1,0 +1,89 @@
+{
+  "expected_change_type": "type_incompatible",
+  "expected_severity": "high",
+  "notes": [],
+  "pre_columns": [
+    {
+      "character_max_length": 32,
+      "data_type": "varchar(32)",
+      "default": null,
+      "enum_values": null,
+      "is_primary_key": true,
+      "name": "id",
+      "nullable": false,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "ordinal_position": 1
+    },
+    {
+      "character_max_length": 255,
+      "data_type": "varchar(255)",
+      "default": null,
+      "enum_values": null,
+      "is_primary_key": false,
+      "name": "email",
+      "nullable": true,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "ordinal_position": 2
+    },
+    {
+      "character_max_length": null,
+      "data_type": "timestamp",
+      "default": null,
+      "enum_values": null,
+      "is_primary_key": false,
+      "name": "created",
+      "nullable": false,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "ordinal_position": 3
+    },
+    {
+      "character_max_length": 32,
+      "data_type": "varchar(32)",
+      "default": null,
+      "enum_values": null,
+      "is_primary_key": false,
+      "name": "default_source",
+      "nullable": true,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "ordinal_position": 4
+    }
+  ],
+  "raw_changes": [
+    {
+      "column_after": {
+        "character_max_length": null,
+        "data_type": "integer",
+        "default": null,
+        "enum_values": null,
+        "is_primary_key": false,
+        "name": "default_source",
+        "nullable": true,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "ordinal_position": 4
+      },
+      "column_before": {
+        "character_max_length": 32,
+        "data_type": "varchar(32)",
+        "default": null,
+        "enum_values": null,
+        "is_primary_key": false,
+        "name": "default_source",
+        "nullable": true,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "ordinal_position": 4
+      },
+      "kind": "modified",
+      "table_identifier": "stripe.customers"
+    }
+  ],
+  "scenario_id": "77903c68533bdc1c",
+  "seed": 20260101,
+  "table": "stripe.customers",
+  "variant": 1
+}

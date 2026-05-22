@@ -1,0 +1,82 @@
+{
+  "expected_change_type": "column_added_not_null_no_default",
+  "expected_severity": "medium",
+  "notes": [],
+  "pre_columns": [
+    {
+      "character_max_length": 32,
+      "data_type": "varchar(32)",
+      "default": null,
+      "enum_values": null,
+      "is_primary_key": true,
+      "name": "id",
+      "nullable": false,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "ordinal_position": 1
+    },
+    {
+      "character_max_length": 32,
+      "data_type": "varchar(32)",
+      "default": null,
+      "enum_values": null,
+      "is_primary_key": false,
+      "name": "customer",
+      "nullable": false,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "ordinal_position": 2
+    },
+    {
+      "character_max_length": 16,
+      "data_type": "varchar(16)",
+      "default": null,
+      "enum_values": [
+        "active",
+        "trialing",
+        "canceled"
+      ],
+      "is_primary_key": false,
+      "name": "status",
+      "nullable": true,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "ordinal_position": 3
+    },
+    {
+      "character_max_length": null,
+      "data_type": "timestamp",
+      "default": null,
+      "enum_values": null,
+      "is_primary_key": false,
+      "name": "current_period_end",
+      "nullable": true,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "ordinal_position": 4
+    }
+  ],
+  "raw_changes": [
+    {
+      "column_after": {
+        "character_max_length": null,
+        "data_type": "integer",
+        "default": null,
+        "enum_values": null,
+        "is_primary_key": false,
+        "name": "nn_nodef_v0",
+        "nullable": false,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "ordinal_position": 5
+      },
+      "column_before": null,
+      "kind": "added",
+      "table_identifier": "stripe.subscriptions"
+    }
+  ],
+  "scenario_id": "1ac952f7d239ac4a",
+  "seed": 20260101,
+  "table": "stripe.subscriptions",
+  "variant": 0
+}

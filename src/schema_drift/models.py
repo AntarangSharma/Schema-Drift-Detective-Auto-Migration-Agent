@@ -64,6 +64,8 @@ class SourceKind(StrEnum):
     DUCKDB = "duckdb"
     REST_API = "rest_api"
     KAFKA = "kafka"  # stretch (week 7)
+    DEBEZIUM = "debezium"
+    SNOWFLAKE = "snowflake"
 
 
 class ChangeType(StrEnum):

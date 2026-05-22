@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "schema-drift-detective"
-version = "0.1.0"
+version = "0.8.0"
 description = "An upstream schema-drift CI check that opens PRs with proposed migrations and impact analysis."
 readme = "README.md"
 license = { text = "MIT" }

@@ -1,0 +1,66 @@
+{
+  "expected_change_type": "column_added_not_null",
+  "expected_severity": "low",
+  "notes": [],
+  "pre_columns": [
+    {
+      "character_max_length": null,
+      "data_type": "integer",
+      "default": null,
+      "enum_values": null,
+      "is_primary_key": true,
+      "name": "n_nationkey",
+      "nullable": false,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "ordinal_position": 1
+    },
+    {
+      "character_max_length": 25,
+      "data_type": "char(25)",
+      "default": null,
+      "enum_values": null,
+      "is_primary_key": false,
+      "name": "n_name",
+      "nullable": false,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "ordinal_position": 2
+    },
+    {
+      "character_max_length": null,
+      "data_type": "integer",
+      "default": null,
+      "enum_values": null,
+      "is_primary_key": false,
+      "name": "n_regionkey",
+      "nullable": false,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "ordinal_position": 3
+    }
+  ],
+  "raw_changes": [
+    {
+      "column_after": {
+        "character_max_length": 20,
+        "data_type": "varchar(20)",
+        "default": "'x'",
+        "enum_values": null,
+        "is_primary_key": false,
+        "name": "new_nn_v1",
+        "nullable": false,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "ordinal_position": 4
+      },
+      "column_before": null,
+      "kind": "added",
+      "table_identifier": "tpch.nation"
+    }
+  ],
+  "scenario_id": "1dc779937a001e65",
+  "seed": 20260101,
+  "table": "tpch.nation",
+  "variant": 1
+}

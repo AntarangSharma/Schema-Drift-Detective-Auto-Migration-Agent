@@ -113,14 +113,24 @@ class TestRunOnce:
         assert store.latest("pg") == after
 
     def test_classifier_returning_none_filters_event(self):
-        # 'removed' is intentionally not classified in Day-3; the runner must
-        # tolerate that and simply emit zero events.
+        # Stub-classifier path: explicitly return None for every input so
+        # we exercise the runner's "filter None events" branch independent
+        # of whatever the production classifier currently supports. (The
+        # original test relied on 'removed' being unhandled, which is no
+        # longer true after the Week-2 classifier expansion.)
+        from schema_drift.classifier import Classifier
+
+        class _AlwaysNoneClassifier(Classifier):
+            def classify(self, raw_change):  # type: ignore[override]
+                return None
+
         before = _snap((_col("id"), _col("doomed", ordinal=2)))
         after = _snap((_col("id"),))
         store = InMemorySnapshotStore()
         runner = WatcherRunner(
             watcher=_ScriptedWatcher([before, after]),
             store=store,
+            classifier=_AlwaysNoneClassifier(),
         )
 
         runner.run_once()

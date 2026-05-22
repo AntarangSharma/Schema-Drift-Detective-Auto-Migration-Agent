@@ -1,0 +1,66 @@
+{
+  "expected_change_type": "column_added_not_null",
+  "expected_severity": "low",
+  "notes": [],
+  "pre_columns": [
+    {
+      "character_max_length": null,
+      "data_type": "integer",
+      "default": null,
+      "enum_values": null,
+      "is_primary_key": true,
+      "name": "location_id",
+      "nullable": false,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "ordinal_position": 1
+    },
+    {
+      "character_max_length": 25,
+      "data_type": "varchar(25)",
+      "default": null,
+      "enum_values": null,
+      "is_primary_key": false,
+      "name": "borough",
+      "nullable": true,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "ordinal_position": 2
+    },
+    {
+      "character_max_length": 40,
+      "data_type": "varchar(40)",
+      "default": null,
+      "enum_values": null,
+      "is_primary_key": false,
+      "name": "zone",
+      "nullable": true,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "ordinal_position": 3
+    }
+  ],
+  "raw_changes": [
+    {
+      "column_after": {
+        "character_max_length": 20,
+        "data_type": "varchar(20)",
+        "default": "0",
+        "enum_values": null,
+        "is_primary_key": false,
+        "name": "new_nn_v0",
+        "nullable": false,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "ordinal_position": 4
+      },
+      "column_before": null,
+      "kind": "added",
+      "table_identifier": "taxi.zones"
+    }
+  ],
+  "scenario_id": "1ec8546d22c28b5d",
+  "seed": 20260101,
+  "table": "taxi.zones",
+  "variant": 0
+}

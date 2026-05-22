@@ -1,0 +1,83 @@
+{
+  "metadata": {"project_name": "drift_demo", "adapter_type": "postgres"},
+  "sources": {
+    "source.drift_demo.source_raw.orders": {
+      "resource_type": "source",
+      "name": "orders",
+      "identifier": "orders",
+      "source_name": "source_raw",
+      "schema": "source_raw",
+      "database": "drift",
+      "columns": {
+        "order_id": {"name": "order_id"},
+        "amount": {"name": "amount"},
+        "discount_code": {"name": "discount_code"},
+        "status": {"name": "status"}
+      },
+      "depends_on": {"nodes": []}
+    },
+    "source.drift_demo.source_raw.customers": {
+      "resource_type": "source",
+      "name": "customers",
+      "identifier": "customers",
+      "source_name": "source_raw",
+      "schema": "source_raw",
+      "database": "drift",
+      "columns": {
+        "customer_id": {"name": "customer_id"},
+        "email": {"name": "email"}
+      },
+      "depends_on": {"nodes": []}
+    }
+  },
+  "nodes": {
+    "model.drift_demo.stg_orders": {
+      "resource_type": "model",
+      "name": "stg_orders",
+      "schema": "analytics",
+      "database": "drift",
+      "depends_on": {"nodes": ["source.drift_demo.source_raw.orders"]},
+      "compiled_code": "SELECT o.order_id AS id, o.amount AS amount, o.discount_code AS code FROM source_raw.orders AS o"
+    },
+    "model.drift_demo.stg_customers": {
+      "resource_type": "model",
+      "name": "stg_customers",
+      "schema": "analytics",
+      "database": "drift",
+      "depends_on": {"nodes": ["source.drift_demo.source_raw.customers"]},
+      "compiled_code": "SELECT c.customer_id AS id, c.email AS email FROM source_raw.customers AS c"
+    },
+    "model.drift_demo.fct_orders": {
+      "resource_type": "model",
+      "name": "fct_orders",
+      "schema": "analytics",
+      "database": "drift",
+      "depends_on": {"nodes": ["model.drift_demo.stg_orders", "model.drift_demo.stg_customers"]},
+      "compiled_code": "WITH joined AS (SELECT so.id AS order_id, so.amount, so.code, sc.email FROM analytics.stg_orders AS so LEFT JOIN analytics.stg_customers AS sc ON so.id = sc.id) SELECT order_id, amount, code, email FROM joined"
+    },
+    "model.drift_demo.mart_revenue_daily": {
+      "resource_type": "model",
+      "name": "mart_revenue_daily",
+      "schema": "analytics",
+      "database": "drift",
+      "depends_on": {"nodes": ["model.drift_demo.fct_orders"]},
+      "compiled_code": "SELECT * FROM analytics.fct_orders"
+    },
+    "model.drift_demo.mart_union": {
+      "resource_type": "model",
+      "name": "mart_union",
+      "schema": "analytics",
+      "database": "drift",
+      "depends_on": {"nodes": ["model.drift_demo.stg_orders", "model.drift_demo.stg_customers"]},
+      "compiled_code": "SELECT so.id AS id, so.amount AS metric FROM analytics.stg_orders AS so UNION ALL SELECT sc.id AS id, NULL AS metric FROM analytics.stg_customers AS sc"
+    }
+  },
+  "exposures": {
+    "exposure.drift_demo.exec_revenue": {
+      "resource_type": "exposure",
+      "name": "exec_revenue",
+      "type": "dashboard",
+      "depends_on": {"nodes": ["model.drift_demo.mart_revenue_daily"]}
+    }
+  }
+}

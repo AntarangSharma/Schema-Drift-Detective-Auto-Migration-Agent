@@ -1,0 +1,16 @@
+expected ↓ / pred →    | precision_changed | type_incompatible | type_narrowed | column_added_not_null… | column_added_nullable | column_added_not_null | column_dropped | column_renamed | type_widened |     Σ
+-----------------------+-------------------+-------------------+---------------+------------------------+-----------------------+-----------------------+----------------+----------------+--------------+------
+column_added_not_null… |                 0 |                 0 |             0 |                     13 |                     0 |                     0 |              0 |              0 |            0 |    13
+column_added_nullable  |                 0 |                 0 |             0 |                      0 |                    12 |                     0 |              0 |              0 |            0 |    12
+type_narrowed          |                 0 |                 3 |             8 |                      0 |                     0 |                     0 |              0 |              0 |            0 |    11
+pk_changed             |                 6 |                 5 |             0 |                      0 |                     0 |                     0 |              0 |              0 |            0 |    11
+column_added_not_null  |                 0 |                 0 |             0 |                      0 |                     0 |                    10 |              0 |              0 |            0 |    10
+type_incompatible      |                 0 |                 3 |             6 |                      0 |                     0 |                     0 |              0 |              0 |            0 |     9
+type_widened           |                 2 |                 3 |             0 |                      0 |                     0 |                     0 |              0 |              0 |            4 |     9
+column_dropped         |                 0 |                 0 |             0 |                      0 |                     0 |                     0 |              8 |              0 |            0 |     8
+default_changed        |                 7 |                 1 |             0 |                      0 |                     0 |                     0 |              0 |              0 |            0 |     8
+nullability_tightened  |                 2 |                 4 |             0 |                      0 |                     0 |                     0 |              0 |              0 |            0 |     6
+column_renamed         |                 0 |                 0 |             0 |                      0 |                     0 |                     0 |              0 |              5 |            0 |     5
+precision_changed      |                 5 |                 0 |             0 |                      0 |                     0 |                     0 |              0 |              0 |            0 |     5
+enum_value_added       |                 3 |                 0 |             0 |                      0 |                     0 |                     0 |              0 |              0 |            0 |     3
+Σ                      |                25 |                19 |            14 |                     13 |                    12 |                    10 |              8 |              5 |            4 |   110

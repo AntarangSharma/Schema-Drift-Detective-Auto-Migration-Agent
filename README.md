@@ -4,7 +4,11 @@
 > Watches Postgres / DuckDB / REST APIs for schema changes, walks dbt + OpenLineage downstream graph, opens a GitHub PR with: a typed `DriftEvent`, a quantified blast radius, a draft migration, updated dbt tests, and a rollback plan.
 
 <p align="center">
-  <em>🚧 Phase 0 scaffold — see <a href="docs/02_revised_plan.md">docs/02_revised_plan.md</a> for the 8-week build plan.</em>
+  <em>v0.8.0 — 8-week build plan landed. See <a href="docs/02_revised_plan.md">docs/02_revised_plan.md</a> for design, <a href="bench/results/RESULTS.md">bench/results/RESULTS.md</a> for measured numbers, <a href="docs/06_launch_checklist.md">docs/06_launch_checklist.md</a> for what's deliberately deferred.</em>
+</p>
+
+<p align="center">
+  <em>📽️ 15s demo GIF placeholder — to be recorded against the live sandbox; see <a href="docs/figs/">docs/figs/</a>.</em>
 </p>
 
 ---
@@ -15,17 +19,24 @@ In most data teams, schema changes are *upstream* (app DB, SaaS API) and quality
 
 > "Catches drift before it reaches production dashboards, with a quantified false-positive rate."
 
-## Hero metrics _(to be filled in by Week 5)_
+## Hero metrics (v0.8.0, held-out split)
 
-| | Value |
-|---|---|
-| Drift detection recall | `__.__%` |
-| Severity classification macro-F1 | `__.__` |
-| Downstream impact recall | `__.__` |
-| Migration correctness (compiles + tests pass) | `__.__%` |
-| Mean time: drift → PR | `__ s` |
-| Steady-state cost | `~$2 / 1k events` |
-| Scenarios in benchmark | `300` |
+Measured against the **110-scenario held-out split** (`sha256(scenario_id) % 10 ∈ {7,8,9}`) of the 364-scenario synthetic corpus. Full table + per-method confusion matrices in [`bench/results/RESULTS.md`](bench/results/RESULTS.md).
+
+| | Rule-only (ours) | One-shot LLM baseline |
+|---|---|---|
+| Drift detection recall | **1.000** | 1.000 |
+| Classification recall | **1.000** | 0.618 |
+| Severity macro-F1 | **1.000** | 0.812 |
+| Column-level impact recall / precision | **1.0 / 1.0**¹ | n/a² |
+| Mean time: diff → PR bundle | **0.012 ms** (rule) / sub-second total | ~1 s (real Claude) |
+| Steady-state cost | **~$0.10 / 1k events** | ~$2.00 / 1k events |
+| Scenarios in benchmark | 364 (110 held-out) | same |
+| Migration correctness (`dbt compile`) over corpus | **deferred**³ | **deferred**³ |
+
+¹ Measured on `manifest_columns.json` fixture (5 models, 1 exposure, 1 `SELECT *` fan-out). Real-OSS manifest expansion is a post-v0.8.0 follow-up.
+² Baseline emits free-form text only; doesn't produce a structured impact set. See RESULTS.md footnote 3.
+³ The LLM-draft + retry-on-`dbt-compile-error` mechanism is fully implemented and integration-tested (`tests/test_llm.py`), but the *corpus-level* pass-rate over 110 scenarios is gated on a funded Claude run + a real `dbt` binary in CI. We refuse to publish a `MockLLM`-extrapolated number. Tracked in [`docs/06_launch_checklist.md`](docs/06_launch_checklist.md) § "Deferred-funded-run".
 
 ## Architecture (one paragraph)
 
@@ -71,17 +82,24 @@ make lint       # ruff check + format --check
 make typecheck  # pyright
 ```
 
-## Results _(to be filled in by Week 5)_
+## Results (110-scenario held-out split)
 
-| Method | Det. R | Det. P | Sev. F1 | Impact R | Impact P | Mig. ✓ | FPR | MTTPR (s) | $/1k |
+| Method | Drift R | Class. R | Class. P | Sev. F1 | Impact R | Impact P | Mig. ✓ | Latency (ms) | $/1k |
 |---|---|---|---|---|---|---|---|---|---|
-| B1: Great Expectations | _ | _ | _ | _ | _ | n/a | _ | n/a | $0 |
-| B2: dbt tests | _ | _ | _ | _ | _ | n/a | _ | n/a | $0 |
-| B3: One-shot LLM | _ | _ | _ | _ | _ | _ | _ | _ | $_ |
-| **Ours (rule-only)** | _ | _ | _ | _ | _ | _ | _ | _ | $0.10 |
-| **Ours (rule + LLM)** | _ | _ | _ | _ | _ | _ | _ | _ | $2.00 |
+| B1: Great Expectations | 0.682 | 0.000 | 0.000 | 0.215 | n/a | n/a | n/a | 0.000 | $0 |
+| B2: dbt tests          | 0.391 | 0.000 | 0.000 | 0.283 | n/a | n/a | n/a | 0.000 | $0 |
+| B3: One-shot LLM       | 1.000 | 0.618 | 0.618 | 0.812 | n/a | n/a | deferred | 0.001ᴹ | $2.00ᴾ |
+| **Ours (rule-only)**   | **1.000** | **1.000** | **1.000** | **1.000** | **1.0** | **1.0** | n/a | **0.012** | **$0.10** |
+| **Ours (rule + LLM)**  | 1.000 | 1.000 | 1.000 | 1.000 | 1.0 | 1.0 | deferred | 0.013ᴹ | $2.00ᴾ |
 
-Reproduce: `make bench`.
+`ᴹ` = MockLLM latency (real Claude is 800–1500 ms). `ᴾ` = projected from token counts. `deferred` = mechanism shipped, corpus-level number gated on funded run. Full footnotes + caveats: [`bench/results/RESULTS.md`](bench/results/RESULTS.md).
+
+Reproduce:
+
+```bash
+python -m bench.generate --seed 20260101 --variants 2
+python -m bench.all_methods --held-out-only
+```
 
 ## Honest limitations
 

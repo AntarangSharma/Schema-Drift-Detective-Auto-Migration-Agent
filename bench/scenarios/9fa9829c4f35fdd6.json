@@ -1,0 +1,54 @@
+{
+  "expected_change_type": "column_added_not_null_no_default",
+  "expected_severity": "medium",
+  "notes": [],
+  "pre_columns": [
+    {
+      "character_max_length": null,
+      "data_type": "integer",
+      "default": null,
+      "enum_values": null,
+      "is_primary_key": true,
+      "name": "r_regionkey",
+      "nullable": false,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "ordinal_position": 1
+    },
+    {
+      "character_max_length": 25,
+      "data_type": "char(25)",
+      "default": null,
+      "enum_values": null,
+      "is_primary_key": false,
+      "name": "r_name",
+      "nullable": false,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "ordinal_position": 2
+    }
+  ],
+  "raw_changes": [
+    {
+      "column_after": {
+        "character_max_length": null,
+        "data_type": "integer",
+        "default": null,
+        "enum_values": null,
+        "is_primary_key": false,
+        "name": "nn_nodef_v0",
+        "nullable": false,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "ordinal_position": 3
+      },
+      "column_before": null,
+      "kind": "added",
+      "table_identifier": "tpch.region"
+    }
+  ],
+  "scenario_id": "9fa9829c4f35fdd6",
+  "seed": 20260101,
+  "table": "tpch.region",
+  "variant": 0
+}

@@ -1,0 +1,94 @@
+{
+  "expected_change_type": "column_added_not_null_no_default",
+  "expected_severity": "medium",
+  "notes": [],
+  "pre_columns": [
+    {
+      "character_max_length": null,
+      "data_type": "integer",
+      "default": null,
+      "enum_values": null,
+      "is_primary_key": true,
+      "name": "o_orderkey",
+      "nullable": false,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "ordinal_position": 1
+    },
+    {
+      "character_max_length": null,
+      "data_type": "integer",
+      "default": null,
+      "enum_values": null,
+      "is_primary_key": false,
+      "name": "o_custkey",
+      "nullable": false,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "ordinal_position": 2
+    },
+    {
+      "character_max_length": 1,
+      "data_type": "char(1)",
+      "default": null,
+      "enum_values": [
+        "O",
+        "F",
+        "P"
+      ],
+      "is_primary_key": false,
+      "name": "o_orderstatus",
+      "nullable": false,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "ordinal_position": 3
+    },
+    {
+      "character_max_length": null,
+      "data_type": "numeric",
+      "default": null,
+      "enum_values": null,
+      "is_primary_key": false,
+      "name": "o_totalprice",
+      "nullable": false,
+      "numeric_precision": 12,
+      "numeric_scale": 2,
+      "ordinal_position": 4
+    },
+    {
+      "character_max_length": null,
+      "data_type": "date",
+      "default": null,
+      "enum_values": null,
+      "is_primary_key": false,
+      "name": "o_orderdate",
+      "nullable": false,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "ordinal_position": 5
+    }
+  ],
+  "raw_changes": [
+    {
+      "column_after": {
+        "character_max_length": null,
+        "data_type": "integer",
+        "default": null,
+        "enum_values": null,
+        "is_primary_key": false,
+        "name": "nn_nodef_v0",
+        "nullable": false,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "ordinal_position": 6
+      },
+      "column_before": null,
+      "kind": "added",
+      "table_identifier": "tpch.orders"
+    }
+  ],
+  "scenario_id": "a8476ef5411e644f",
+  "seed": 20260101,
+  "table": "tpch.orders",
+  "variant": 0
+}
