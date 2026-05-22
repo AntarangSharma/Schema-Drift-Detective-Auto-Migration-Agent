@@ -12,7 +12,7 @@ import argparse
 from pathlib import Path
 
 from bench.confusion import render as render_confusion
-from bench.runner import _print_summary, run, Method
+from bench.runner import Method, _print_summary, run
 
 METHODS: tuple[Method, ...] = ("ge", "dbt", "oneshot", "ours")
 
