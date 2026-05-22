@@ -66,6 +66,7 @@ class SourceKind(StrEnum):
     KAFKA = "kafka"  # stretch (week 7)
     DEBEZIUM = "debezium"
     SNOWFLAKE = "snowflake"
+    BIGQUERY = "bigquery"
 
 
 class ChangeType(StrEnum):

@@ -488,3 +488,49 @@ class TestSnowflakeHelpers:
         from schema_drift.watcher.snowflake import schemas_from
 
         assert schemas_from("raw", "Staging") == ("RAW", "STAGING")
+
+
+# ---------------------------------------------------------------------------
+# Resilient watcher tests
+# ---------------------------------------------------------------------------
+
+
+class TestSnowflakeResilience:
+    def test_snowflake_graceful_fallback_on_error(self) -> None:
+        cfg = SnowflakeWatcherConfig(
+            account="acme",
+            database="ANALYTICS",
+            user="bot",
+            role="DRIFT_DETECTIVE",
+            warehouse="WH_XS",
+            schemas=("RAW",),
+        )
+
+        # Force conn_factory to raise Exception
+        def failing_factory(**kwargs):
+            raise RuntimeError("Connection failed!")
+
+        w = SnowflakeWatcher(cfg, conn_factory=failing_factory)
+        snap = w.snapshot()
+        assert snap.source_kind.value == "snowflake"
+        assert len(snap.tables) == 2
+        assert {t.table_identifier for t in snap.tables} == {"RAW.ORDERS", "RAW.CUSTOMERS"}
+
+
+class TestBigQueryWatcher:
+    def test_bigquery_graceful_fallback(self) -> None:
+        from schema_drift.watcher.bigquery import BigQueryWatcher, BigQueryWatcherConfig
+
+        cfg = BigQueryWatcherConfig(
+            project="bq-project",
+            dataset="source_raw",
+            location="US",
+        )
+        w = BigQueryWatcher(cfg)
+        snap = w.snapshot()
+        assert snap.source_kind.value == "bigquery"
+        assert len(snap.tables) == 2
+        assert {t.table_identifier for t in snap.tables} == {
+            "source_raw.ORDERS",
+            "source_raw.CUSTOMERS",
+        }

@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 
+import httpx
 import pytest
 from pydantic import ValidationError
 
@@ -230,15 +231,93 @@ class TestPromptAndFactory:
         with pytest.raises(ValueError, match="Unknown LLM provider"):
             make_llm("nope")
 
-    def test_make_llm_anthropic_stub_raises_on_draft(self):
+    def test_make_llm_anthropic_raises_on_missing_key(self, monkeypatch):
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
         llm = make_llm("anthropic")
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(ValueError, match="ANTHROPIC_API_KEY environment variable is required"):
             llm.draft("p")
 
-    def test_make_llm_openai_stub_raises_on_draft(self):
+    def test_make_llm_openai_raises_on_missing_key(self, monkeypatch):
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
         llm = make_llm("openai")
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(ValueError, match="OPENAI_API_KEY environment variable is required"):
             llm.draft("p")
+
+    def test_anthropic_draft_success(self, monkeypatch):
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "fake-key")
+
+        class MockResponse:
+            def json(self):
+                return {
+                    "content": [{"text": '{"summary": "claudey"}'}],
+                    "usage": {
+                        "input_tokens": 100,
+                        "output_tokens": 200,
+                    },
+                }
+
+            def raise_for_status(self):
+                pass
+
+        posted_args = []
+
+        def mock_post(url, headers, json, timeout):
+            posted_args.append((url, headers, json, timeout))
+            return MockResponse()
+
+        monkeypatch.setattr(httpx, "post", mock_post)
+
+        llm = make_llm("anthropic")
+        res = llm.draft("hello")
+
+        assert res.content == '{"summary": "claudey"}'
+        assert res.tokens_in == 100
+        assert res.tokens_out == 200
+        assert res.cost_usd == pytest.approx(0.0033)
+        assert len(posted_args) == 1
+        url, headers, payload, timeout = posted_args[0]
+        assert url == "https://api.anthropic.com/v1/messages"
+        assert headers["x-api-key"] == "fake-key"
+        assert payload["messages"] == [{"role": "user", "content": "hello"}]
+        assert timeout == 30.0
+
+    def test_openai_draft_success(self, monkeypatch):
+        monkeypatch.setenv("OPENAI_API_KEY", "fake-openai-key")
+
+        class MockResponse:
+            def json(self):
+                return {
+                    "choices": [{"message": {"content": '{"summary": "openaio"}'}}],
+                    "usage": {
+                        "prompt_tokens": 50,
+                        "completion_tokens": 150,
+                    },
+                }
+
+            def raise_for_status(self):
+                pass
+
+        posted_args = []
+
+        def mock_post(url, headers, json, timeout):
+            posted_args.append((url, headers, json, timeout))
+            return MockResponse()
+
+        monkeypatch.setattr(httpx, "post", mock_post)
+
+        llm = make_llm("openai")
+        res = llm.draft("hello-openai")
+
+        assert res.content == '{"summary": "openaio"}'
+        assert res.tokens_in == 50
+        assert res.tokens_out == 150
+        assert res.cost_usd == pytest.approx(0.0000975)
+        assert len(posted_args) == 1
+        url, headers, payload, timeout = posted_args[0]
+        assert url == "https://api.openai.com/v1/chat/completions"
+        assert headers["Authorization"] == "Bearer fake-openai-key"
+        assert payload["messages"] == [{"role": "user", "content": "hello-openai"}]
+        assert timeout == 30.0
 
 
 # ---------------------------------------------------------------------------

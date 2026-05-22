@@ -92,20 +92,35 @@ class LineageGraph:
         model_cols: dict[str, tuple[str, ...]] = {}
 
         # Index source columns onto the column graph so impact() seeds can match.
+        upstream_cols: dict[str, tuple[str, ...]] = {}
         for source_id, source in data.get("sources", {}).items():
-            for col_name in _source_column_names(source):
+            cols_list = _source_column_names(source)
+            upstream_cols[source_id] = tuple(cols_list)
+            for col_name in cols_list:
                 col_graph.add_node((source_id, col_name))
 
-        # Walk model nodes.
+        # Walk model nodes in topological order.
         all_nodes = data.get("nodes", {})
-        for node_id, node in all_nodes.items():
+        try:
+            sorted_node_ids = list(nx.topological_sort(node_graph))
+        except nx.NetworkXUnfeasible:
+            sorted_node_ids = list(all_nodes.keys())
+
+        for node_id in sorted_node_ids:
+            if node_id not in all_nodes:
+                continue
+            node = all_nodes[node_id]
             if node.get("resource_type") != "model":
                 continue
             depends_on = node.get("depends_on", {}).get("nodes", []) or []
             compiled = node.get("compiled_code") or node.get("raw_code") or ""
             try:
                 cols, used_star = _extract_column_lineage(
-                    compiled, node_id=node_id, depends_on=depends_on, dialect=dialect
+                    compiled,
+                    node_id=node_id,
+                    depends_on=depends_on,
+                    dialect=dialect,
+                    upstream_cols=upstream_cols,
                 )
             except Exception as exc:
                 logger.warning("column-lineage parse failed for %s: %s", node_id, exc)
@@ -124,6 +139,7 @@ class LineageGraph:
                     col_graph.add_node((src_node_id, src_col))
                     col_graph.add_edge((src_node_id, src_col), tgt)
             model_cols[node_id] = tuple(output_cols)
+            upstream_cols[node_id] = tuple(output_cols)
 
         return cls(
             graph=node_graph,
@@ -316,6 +332,7 @@ def _extract_column_lineage(
     node_id: str,
     depends_on: list[str],
     dialect: str,
+    upstream_cols: dict[str, tuple[str, ...]],
 ) -> tuple[list[tuple[str, list[tuple[str, str]]]], bool]:
     """Parse one model's compiled SQL → list of ``(output_col, [(src_node_id, src_col), ...])``.
 
@@ -328,8 +345,8 @@ def _extract_column_lineage(
     * Compute a CTE-name → set-of-projection-cols map and an alias → source
       map by walking ``FROM``/``JOIN`` clauses.
     * For each top-level ``Select`` projection:
-        - ``*``           → mark used_star, return early.
-        - ``alias.*``     → mark used_star (we don't expand columns yet).
+        - ``*``           → expand using upstream_cols.
+        - ``alias.*``     → expand using upstream_cols or cte_projections.
         - ``alias.col``   → resolve alias → upstream node, attribute col.
         - ``col``         → attribute col to *every* upstream (unioned).
         - ``expr AS name``→ recurse into ``expr`` to collect column refs.
@@ -343,11 +360,11 @@ def _extract_column_lineage(
     except Exception:
         raise
 
-    return _extract_from_tree(tree, depends_on=depends_on)
+    return _extract_from_tree(tree, depends_on=depends_on, upstream_cols=upstream_cols)
 
 
 def _extract_from_tree(
-    tree: exp.Expression, *, depends_on: list[str]
+    tree: exp.Expression, *, depends_on: list[str], upstream_cols: dict[str, tuple[str, ...]]
 ) -> tuple[list[tuple[str, list[tuple[str, str]]]], bool]:
     # Strip enclosing parens.
     if isinstance(tree, exp.Paren):
@@ -355,8 +372,12 @@ def _extract_from_tree(
 
     # UNION ALL / UNION → merge legs positionally.
     if isinstance(tree, exp.Union):
-        left_proj, left_star = _extract_from_tree(tree.this, depends_on=depends_on)
-        right_proj, right_star = _extract_from_tree(tree.expression, depends_on=depends_on)
+        left_proj, left_star = _extract_from_tree(
+            tree.this, depends_on=depends_on, upstream_cols=upstream_cols
+        )
+        right_proj, right_star = _extract_from_tree(
+            tree.expression, depends_on=depends_on, upstream_cols=upstream_cols
+        )
         if left_star or right_star:
             return [], True
         if len(left_proj) != len(right_proj):
@@ -374,7 +395,7 @@ def _extract_from_tree(
     # Source resolution: alias → upstream node_id.
     alias_to_node: dict[str, str] = _resolve_aliases(select, depends_on=depends_on)
     cte_projections: dict[str, list[tuple[str, list[tuple[str, str]]]]] = _resolve_ctes(
-        select, depends_on=depends_on
+        select, depends_on=depends_on, upstream_cols=upstream_cols
     )
     # If the outer FROM references a CTE (not an upstream model), record
     # which CTE backs each table-alias so unqualified columns can be
@@ -385,14 +406,95 @@ def _extract_from_tree(
 
     projections: list[tuple[str, list[tuple[str, str]]]] = []
     for projection in select.expressions:
-        if isinstance(projection, exp.Star) or (
+        is_unqualified_star = isinstance(projection, exp.Star)
+        is_qualified_star = (
             isinstance(projection, exp.Column) and isinstance(projection.this, exp.Star)
-        ):
-            return [], True
+        ) or (isinstance(projection, exp.Column) and projection.find(exp.Star) is not None)
 
-        # ``alias.*``
-        if isinstance(projection, exp.Column) and projection.find(exp.Star):
-            return [], True
+        if is_unqualified_star:
+            tables: list[exp.Table] = []
+            from_clause = select.args.get("from")
+            if isinstance(from_clause, exp.From):
+                if isinstance(from_clause.this, exp.Table):
+                    tables.append(from_clause.this)
+                elif isinstance(from_clause.this, exp.Alias) and isinstance(
+                    from_clause.this.this, exp.Table
+                ):
+                    tables.append(from_clause.this.this)
+                else:
+                    tables.extend(from_clause.find_all(exp.Table))
+            for join in select.args.get("joins", []) or []:
+                if isinstance(join, exp.Join):
+                    if isinstance(join.this, exp.Table):
+                        tables.append(join.this)
+                    elif isinstance(join.this, exp.Alias) and isinstance(join.this.this, exp.Table):
+                        tables.append(join.this.this)
+                    else:
+                        tables.extend(join.find_all(exp.Table))
+
+            possible = True
+            star_projections = []
+            for table in tables:
+                alias = (table.alias_or_name or table.name).lower()
+                if alias in alias_to_node:
+                    node_id = alias_to_node[alias]
+                    cols = upstream_cols.get(node_id, ())
+                    if not cols:
+                        possible = False
+                        break
+                    for col_name in cols:
+                        star_projections.append((col_name, [(node_id, col_name)]))
+                elif alias in alias_to_cte:
+                    cte_name = alias_to_cte[alias]
+                    cte_proj = cte_projections.get(cte_name, [])
+                    if not cte_proj:
+                        possible = False
+                        break
+                    for proj_name, sources in cte_proj:
+                        star_projections.append((proj_name, sources))
+                else:
+                    possible = False
+                    break
+
+            if not possible:
+                return [], True
+
+            projections.extend(star_projections)
+            continue
+
+        elif is_qualified_star:
+            alias = ""
+            if isinstance(projection, exp.Column):
+                alias = (projection.table or "").lower()
+            if not alias:
+                return [], True
+
+            possible = True
+            star_projections = []
+            if alias in alias_to_node:
+                node_id = alias_to_node[alias]
+                cols = upstream_cols.get(node_id, ())
+                if not cols:
+                    possible = False
+                else:
+                    for col_name in cols:
+                        star_projections.append((col_name, [(node_id, col_name)]))
+            elif alias in alias_to_cte:
+                cte_name = alias_to_cte[alias]
+                cte_proj = cte_projections.get(cte_name, [])
+                if not cte_proj:
+                    possible = False
+                else:
+                    for proj_name, sources in cte_proj:
+                        star_projections.append((proj_name, sources))
+            else:
+                possible = False
+
+            if not possible:
+                return [], True
+
+            projections.extend(star_projections)
+            continue
 
         out_name = projection.alias_or_name or "_unnamed"
         col_refs = _collect_column_refs(
@@ -401,7 +503,6 @@ def _extract_from_tree(
             alias_to_cte=alias_to_cte,
             cte_projections=cte_projections,
         )
-        # Deduplicate column refs.
         unique_refs = list({(n, c) for n, c in col_refs})
         projections.append((out_name, unique_refs))
 
@@ -439,7 +540,7 @@ def _resolve_aliases(select: exp.Select, *, depends_on: list[str]) -> dict[str, 
 
 
 def _resolve_ctes(
-    select: exp.Select, *, depends_on: list[str]
+    select: exp.Select, *, depends_on: list[str], upstream_cols: dict[str, tuple[str, ...]]
 ) -> dict[str, list[tuple[str, list[tuple[str, str]]]]]:
     """Map CTE name → its inner projection list."""
     out: dict[str, list[tuple[str, list[tuple[str, str]]]]] = {}
@@ -449,7 +550,9 @@ def _resolve_ctes(
     for cte in with_clause.expressions:
         name = cte.alias.lower()
         inner_select = cte.this
-        proj, used_star = _extract_from_tree(inner_select, depends_on=depends_on)
+        proj, used_star = _extract_from_tree(
+            inner_select, depends_on=depends_on, upstream_cols=upstream_cols
+        )
         if used_star:
             out[name] = []  # caller will widen
         else:

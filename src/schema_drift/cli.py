@@ -81,8 +81,15 @@ def watch(
             help="Label written to snapshots / drift events for this source.",
         ),
     ] = "postgres",
+    source_kind: Annotated[
+        str,
+        typer.Option(
+            "--source-kind",
+            help="Type of database source (postgres, snowflake, bigquery).",
+        ),
+    ] = "postgres",
 ) -> None:
-    """Poll the configured Postgres source once and report any drift events.
+    """Poll the configured database source once and report any drift events.
 
     Currently only ``--once`` is wired (Day 4). The long-running daemon mode
     is Week 6 — keep that flag the explicit default so nobody accidentally
@@ -95,11 +102,46 @@ def watch(
     effective_dsn = dsn or os.getenv("DRIFT_DSN", _DEFAULT_DSN)
     schema_list = [s.strip() for s in schemas.split(",") if s.strip()]
 
-    watcher = PostgresWatcher(
-        dsn=effective_dsn,
-        schemas=schema_list,
-        source_identifier=source_identifier,
-    )
+    from schema_drift.watcher.bigquery import BigQueryWatcher, BigQueryWatcherConfig
+    from schema_drift.watcher.snowflake import SnowflakeWatcher, SnowflakeWatcherConfig
+
+    if source_kind == "postgres":
+        watcher = PostgresWatcher(
+            dsn=effective_dsn,
+            schemas=schema_list,
+            source_identifier=source_identifier,
+        )
+    elif source_kind == "snowflake":
+        sf_account = os.getenv("SF_ACCOUNT", "demo_acme")
+        sf_database = os.getenv("SF_DATABASE", "ANALYTICS")
+        sf_user = os.getenv("SF_USER", "bot")
+        sf_role = os.getenv("SF_ROLE", "DRIFT_DETECTIVE")
+        sf_warehouse = os.getenv("SF_WAREHOUSE", "WH_XS")
+        cfg = SnowflakeWatcherConfig(
+            account=sf_account,
+            database=sf_database,
+            user=sf_user,
+            role=sf_role,
+            warehouse=sf_warehouse,
+            schemas=tuple(schema_list),
+            source_identifier=source_identifier,
+        )
+        watcher = SnowflakeWatcher(cfg)
+    elif source_kind == "bigquery":
+        bq_project = os.getenv("BQ_PROJECT", "demo-project")
+        bq_dataset = os.getenv("BQ_DATASET", schema_list[0] if schema_list else "source_raw")
+        bq_location = os.getenv("BQ_LOCATION", None)
+        bq_cfg = BigQueryWatcherConfig(
+            project=bq_project,
+            dataset=bq_dataset,
+            location=bq_location,
+            source_identifier=source_identifier,
+        )
+        watcher = BigQueryWatcher(bq_cfg)
+    else:
+        console.print(f"[red]Unsupported source kind: {source_kind}[/red]")
+        raise typer.Exit(code=1)
+
     store = PostgresSnapshotStore(dsn=effective_dsn)
     runner = WatcherRunner(watcher=watcher, store=store)
 

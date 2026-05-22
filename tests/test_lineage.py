@@ -58,8 +58,15 @@ class TestColumnLineage:
         g = LineageGraph.from_manifest_with_columns(FIXTURE_COLS)
         # 8 nodes (2 sources + 5 models + 1 exposure).
         assert g.graph.number_of_nodes() == 8
-        # ``mart_revenue_daily`` selects ``*`` → flagged.
-        assert "model.drift_demo.mart_revenue_daily" in g.fan_out_models
+        # ``mart_revenue_daily`` selects ``*`` → successfully resolved, not in fan_out!
+        assert "model.drift_demo.mart_revenue_daily" not in g.fan_out_models
+
+    def test_select_star_resolves_column_lineage(self):
+        """SELECT * in mart_revenue_daily should propagate columns correctly."""
+        g = LineageGraph.from_manifest_with_columns(FIXTURE_COLS)
+        impact = g.impact_columns("source_raw.orders", "amount")
+        # Assert that mart_revenue_daily.amount is resolved in the lineage!
+        assert ("mart_revenue_daily", "amount") in impact
 
     def test_qualified_column_trace_through_cte(self):
         """``orders.amount`` flows ``stg_orders.amount → fct_orders.amount``
@@ -84,9 +91,9 @@ class TestColumnLineage:
     def test_select_star_fan_out_widens_node_level_impact(self):
         g = LineageGraph.from_manifest_with_columns(FIXTURE_COLS)
         impact_set = g.impact("source_raw.orders")
-        # mart_revenue_daily uses SELECT * → fan_out_conservative is True.
-        assert impact_set.fan_out_conservative is True
-        assert impact_set.lineage_confidence == "medium"
+        # mart_revenue_daily uses SELECT * but resolved it -> fan_out_conservative is False.
+        assert impact_set.fan_out_conservative is False
+        assert impact_set.lineage_confidence == "high"
 
     def test_impact_for_missing_source_returns_empty(self):
         g = LineageGraph.from_manifest_with_columns(FIXTURE_COLS)
@@ -109,11 +116,9 @@ class TestColumnLineage:
         """A model with garbled SQL must end up in fan_out_models, not crash."""
         bad = tmp_path / "manifest.json"
         bad.write_text(
-
-                '{"sources":{},"nodes":{"model.x.broken":{"resource_type":"model",'
-                '"name":"broken","depends_on":{"nodes":[]},'
-                '"compiled_code":"this is not sql !!!"}},"exposures":{}}'
-
+            '{"sources":{},"nodes":{"model.x.broken":{"resource_type":"model",'
+            '"name":"broken","depends_on":{"nodes":[]},'
+            '"compiled_code":"this is not sql !!!"}},"exposures":{}}'
         )
         g = LineageGraph.from_manifest_with_columns(bad)
         assert "model.x.broken" in g.fan_out_models

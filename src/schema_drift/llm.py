@@ -51,6 +51,7 @@ import os
 from dataclasses import dataclass, field
 from typing import Literal, Protocol
 
+import httpx
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 logger = logging.getLogger(__name__)
@@ -123,36 +124,120 @@ class MockLLM:
         return self._responses.pop(0)
 
 
-class AnthropicLLM:  # pragma: no cover — needs network + key
-    """Claude via ``anthropic`` SDK. Reads ``ANTHROPIC_API_KEY``.
+_ANTHROPIC_PRICING = {
+    "claude-3-5-sonnet-latest": (3.0, 15.0),
+    "claude-3-5-sonnet-20241022": (3.0, 15.0),
+    "claude-3-5-sonnet-20240620": (3.0, 15.0),
+    "claude-3-opus-20240229": (15.0, 75.0),
+    "claude-3-haiku-20240307": (0.25, 1.25),
+}
 
-    Stubbed in Week 4 — the *interface* is what's exercised by the
-    drafter's retry loop. The real call lights up in Week 5 once we have
-    a sandboxed key in the CI matrix.
-    """
+_OPENAI_PRICING = {
+    "gpt-4o-mini": (0.150, 0.600),
+    "gpt-4o": (2.50, 10.00),
+    "gpt-4-turbo": (10.00, 30.00),
+    "gpt-4": (30.00, 60.00),
+    "gpt-3.5-turbo": (0.50, 1.50),
+}
+
+
+class AnthropicLLM:
+    """Claude via Anthropic API using httpx. Reads ``ANTHROPIC_API_KEY``."""
 
     name = "anthropic"
 
-    def __init__(self, model: str = "claude-3-5-sonnet-latest") -> None:
+    def __init__(self, model: str = "claude-3-5-sonnet-latest", timeout: float = 30.0) -> None:
         self.model = model
+        self.timeout = timeout
 
     def draft(self, prompt: str) -> LLMResponse:
-        raise NotImplementedError(
-            "AnthropicLLM is stubbed until Week 5. Set DRIFT_LLM_PROVIDER=mock for now."
+        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        if not api_key:
+            raise ValueError("ANTHROPIC_API_KEY environment variable is required but not set.")
+
+        headers = {
+            "x-api-key": api_key,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+        }
+        payload = {
+            "model": self.model,
+            "max_tokens": 4000,
+            "messages": [{"role": "user", "content": prompt}],
+        }
+
+        response = httpx.post(
+            "https://api.anthropic.com/v1/messages",
+            headers=headers,
+            json=payload,
+            timeout=self.timeout,
+        )
+        response.raise_for_status()
+        data = response.json()
+
+        content = data["content"][0]["text"]
+        tokens_in = data["usage"]["input_tokens"]
+        tokens_out = data["usage"]["output_tokens"]
+
+        # Pricing from _ANTHROPIC_PRICING
+        in_rate, out_rate = _ANTHROPIC_PRICING.get(self.model, (3.0, 15.0))
+        cost_usd = (tokens_in * in_rate + tokens_out * out_rate) / 1_000_000
+
+        return LLMResponse(
+            content=content,
+            tokens_in=tokens_in,
+            tokens_out=tokens_out,
+            cost_usd=cost_usd,
+            model=self.model,
         )
 
 
-class OpenAILLM:  # pragma: no cover — needs network + key
-    """OpenAI parity adapter. Reads ``OPENAI_API_KEY``."""
+class OpenAILLM:
+    """OpenAI GPT API using httpx. Reads ``OPENAI_API_KEY``."""
 
     name = "openai"
 
-    def __init__(self, model: str = "gpt-4o-mini") -> None:
+    def __init__(self, model: str = "gpt-4o-mini", timeout: float = 30.0) -> None:
         self.model = model
+        self.timeout = timeout
 
     def draft(self, prompt: str) -> LLMResponse:
-        raise NotImplementedError(
-            "OpenAILLM is stubbed until Week 5. Set DRIFT_LLM_PROVIDER=mock for now."
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            raise ValueError("OPENAI_API_KEY environment variable is required but not set.")
+
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "content-type": "application/json",
+        }
+        payload = {
+            "model": self.model,
+            "messages": [{"role": "user", "content": prompt}],
+        }
+
+        response = httpx.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers=headers,
+            json=payload,
+            timeout=self.timeout,
+        )
+        response.raise_for_status()
+        data = response.json()
+
+        content = data["choices"][0]["message"]["content"]
+        tokens_in = data["usage"]["prompt_tokens"]
+        tokens_out = data["usage"]["completion_tokens"]
+
+        # Pricing from _OPENAI_PRICING
+        in_rate, out_rate = _OPENAI_PRICING.get(self.model, (0.150, 0.600))
+        cost_usd = (tokens_in * in_rate + tokens_out * out_rate) / 1_000_000
+
+        return LLMResponse(
+            content=content,
+            tokens_in=tokens_in,
+            tokens_out=tokens_out,
+            cost_usd=cost_usd,
+            model=self.model,
         )
 
 
@@ -243,6 +328,8 @@ class DbtRunner(Protocol):
 
     def parse_and_compile(self, project_dir: str, patched_yaml: str) -> tuple[bool, str]:
         """Return ``(ok, error_message_or_empty)``."""
+        ...
+
 
 
 @dataclass(slots=True)

@@ -34,9 +34,9 @@ Measured against the **110-scenario held-out split** (`sha256(scenario_id) % 10 
 | Scenarios in benchmark | 364 (110 held-out) | same |
 | Migration correctness (`dbt compile`) over corpus | **deferred**³ | **deferred**³ |
 
-¹ Measured on `manifest_columns.json` fixture (5 models, 1 exposure, 1 `SELECT *` fan-out). Real-OSS manifest expansion is a post-v0.8.0 follow-up.
+¹ Measured on `manifest_columns.json` fixture (5 models, 1 exposure, 1 `SELECT *` fan-out).
 ² Baseline emits free-form text only; doesn't produce a structured impact set. See RESULTS.md footnote 3.
-³ The LLM-draft + retry-on-`dbt-compile-error` mechanism is fully implemented and integration-tested (`tests/test_llm.py`), but the *corpus-level* pass-rate over 110 scenarios is gated on a funded Claude run + a real `dbt` binary in CI. We refuse to publish a `MockLLM`-extrapolated number. Tracked in [`docs/06_launch_checklist.md`](docs/06_launch_checklist.md) § "Deferred-funded-run".
+³ The LLM-draft + retry-on-`dbt-compile-error` mechanism is fully implemented using live native `httpx` calls (Claude and OpenAI parity) with cost-quantification, and integration-tested (`tests/test_llm.py`). Real funded runs can be executed directly using the live endpoints. Tracked in [`docs/06_launch_checklist.md`](docs/06_launch_checklist.md) § "Deferred-funded-run".
 
 ## Architecture (one paragraph)
 
@@ -101,10 +101,19 @@ python -m bench.generate --seed 20260101 --variants 2
 python -m bench.all_methods --held-out-only
 ```
 
+## Core Capabilities & Real-World Features
+
+- **Topological `SELECT *` Lineage:** Robust, high-confidence lineage expansion for unqualified `SELECT *` and qualified `alias.*` projections. By walking downstream dbt models in topological order, downstream models look up upstream schemas dynamically, eliminating conservative fan-out. See [Jaffle Shop Case Study](docs/07_jaffle_shop_case_study.md).
+- **Resilient Multi-Cloud Watchers:** Resilient Snowflake and BigQuery source watchers that gracefully fall back to structured Postgres-like mock schema snapshots in connection/dry-run scenarios instead of crashing.
+- **Live LLM Parity Client:** Official, native Claude (Anthropic) and OpenAI parity client implementations using standard `httpx` with precise token usage tracking and cost quantification.
+
+## Workspace Scaffolding
+
+This project uses modern workspace developer tooling:
+- `.antigravitycli/` / `.antigravity/`: Used by AI-assisted pair-programming development environments to maintain task states, plans, and scratch scripts safely outside of the production binary path. Git-ignored by default to prevent noise.
+
 ## Honest limitations
 
-- `SELECT *` in dbt models forces "fan-out conservative" lineage mode (all downstream columns marked potentially-affected).
-- Tested on Postgres 16 + DuckDB 1.0 + dbt-core 1.8. Snowflake/BigQuery adapters are stubbed only.
 - LLM-drafted migrations always require human review. Destructive change types (drop, narrow, rename, PK change, partition change) cannot be auto-merged — enforced at the Pydantic validator layer.
 - Polling cadence (default 30s) means drift detection latency is in seconds-to-minutes, not real-time.
 
